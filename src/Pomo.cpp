@@ -11,9 +11,10 @@ Pomo::Pomo()
     initAudioEngine();
     initPomodoro();
     initGui();
-
+    updateRemainingLabel();
     connect(&m_timer, &QTimer::timeout, this, &Pomo::updateCountdown);
     m_timer.setInterval(1000);
+    m_timer.setTimerType(Qt::TimerType::PreciseTimer);
 }
 
 void Pomo::initActionMap() noexcept
@@ -118,6 +119,9 @@ void Pomo::initConfiguration() noexcept
 
     m_confirm_on_exit = config["pomodoro"]["confirm-on-exit"].value_or(true);
 
+    m_pomodoros_before_long_break = config["pomodoro"]["long-break-after-tasks"].value_or(4);
+
+    // Keybindings
     if (config["keybindings"].is_table())
     {
         auto keybindings = config["keybindings"].as_table();
@@ -154,18 +158,21 @@ void Pomo::initGui() noexcept
         m_layout->addWidget(m_remaining_label);
     }
 
+    m_timer_label->setAlignment(Qt::AlignCenter);
     m_state_label->setAlignment(Qt::AlignCenter);
     m_remaining_label->setAlignment(Qt::AlignCenter);
+    m_layout->setAlignment(Qt::AlignCenter);
+
     m_timer_label->setFont(m_timer_font);
     m_state_label->setFont(m_state_font);
     m_remaining_label->setFont(m_remaining_font);
-
-    m_layout->setAlignment(Qt::AlignCenter);
 
 }
 
 void Pomo::resetTimer() noexcept
 {
+    m_timer.stop();
+    m_pomodoro_count = 0;
 }
 
 void Pomo::toggleTimer() noexcept
@@ -175,8 +182,11 @@ void Pomo::toggleTimer() noexcept
     if (m_timer_is_active)
     {
         m_timer.start();
+        updateStateLabel();
+        m_timer_paused = false;
     } else {
         m_timer.stop();
+        m_timer_paused = true;
     }
 }
 
@@ -184,31 +194,25 @@ void Pomo::updateCountdown() noexcept
 {
     if (m_totalSeconds > 0)
     {
-        int h = m_totalSeconds / 3600;
-        int m = (m_totalSeconds % 3600) / 60;
-        int s = m_totalSeconds % 60;
+        int total = --m_totalSeconds;
+        int h = total / 3600;
+        int m = (total % 3600) / 60;
+        int s = total % 60;
 
-        if (h > 0 || !m_hide_hour)
+        QString timeStr = QString::asprintf("%02d:%02d:%02d", h, m, s);
+
+        if (h == 0 && m_hide_hour)
         {
-            m_timer_label->setText(QString("%1:%2:%3")
-                                   .arg(h, 2, 10, QChar('0'))
-                                   .arg(m, 2, 10, QChar('0'))
-                                   .arg(s, 2, 10, QChar('0')));
-        } else {
-            m_timer_label->setText(QString("%1:%2")
-                                   .arg(m, 2, 10, QChar('0'))
-                                   .arg(s, 2, 10, QChar('0')));
+            timeStr = timeStr.right(5); // Get "mm:ss"
         }
-        m_totalSeconds--;
+
+        m_timer_label->setText(timeStr);
     } else {
         playSound();
-        m_timer_label->setText("00:00");
-        m_timer.stop();
         advanceState();
         showNotification();
-        if (m_timer_is_active)
-            m_timer.start();
     }
+
 }
 
 void Pomo::setupKeybindings(const QString &key,
@@ -352,7 +356,7 @@ void Pomo::advanceState() noexcept
     {
         case PomodoroState::FOCUS:
             m_pomodoro_count++;
-            if (m_pomodoro_count % m_pomodoros_before_long_break == 0)
+            if ((m_pomodoro_count = m_pomodoro_count % m_pomodoros_before_long_break) == 0)
                 m_current_state = PomodoroState::LONG_BREAK;
             else
                 m_current_state = PomodoroState::SHORT_BREAK;
@@ -369,7 +373,7 @@ void Pomo::advanceState() noexcept
     m_timer_label->setText(QString::fromStdString(secondsToFlexibleString(m_totalSeconds)));
 
     updateStateLabel();
-
+    updateRemainingLabel();
 }
 
 void Pomo::updateStateLabel() noexcept
@@ -386,6 +390,12 @@ void Pomo::updateStateLabel() noexcept
             m_state_label->setText("Long Break");
             break;
     }
+}
+
+void Pomo::updateRemainingLabel() noexcept
+{
+    m_remaining_label->setText(QString("%1 tasks before long break")
+                               .arg(m_pomodoros_before_long_break - m_pomodoro_count));
 }
 
 Pomo::~Pomo()
