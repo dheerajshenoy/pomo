@@ -73,6 +73,8 @@ void Pomo::initConfiguration() noexcept
         m_has_audio = true;
     }
 
+    m_confirm_on_exit = config["pomodoro"]["confirm-on-exit"].value_or(true);
+
 }
 
 void Pomo::initGui() noexcept
