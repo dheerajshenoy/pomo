@@ -18,6 +18,7 @@ add_executable(MyQtApp
     src/main.cpp
     src/Pomo.cpp
     src/miniaudio.cpp
+    src/BlinkingLabel.hpp
 )
 
 target_link_libraries(MyQtApp
