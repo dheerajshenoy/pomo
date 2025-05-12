@@ -216,6 +216,46 @@ int Pomo::parse_duration(const std::string& input) noexcept
     return total_seconds;
 }
 
+void Pomo::initPomodoro() noexcept
+{
+    m_totalSeconds = m_state_time_map[m_current_state];
+    auto str_secs = secondsToFlexibleString(m_totalSeconds);
+    m_timer_label->setText(QString::fromStdString(str_secs));
+}
+
+std::string Pomo::secondsToFlexibleString(const int &totalSeconds) noexcept
+{
+    int hours   = totalSeconds / 3600;
+    int minutes = (totalSeconds % 3600) / 60;
+    int seconds = totalSeconds % 60;
+
+    std::ostringstream oss;
+
+    if (hours > 0) {
+        oss << std::setw(2) << std::setfill('0') << hours << ":";
+    }
+
+    oss << std::setw(2) << std::setfill('0') << minutes << ":"
+        << std::setw(2) << std::setfill('0') << seconds;
+
+    return oss.str();
+}
+
+void Pomo::closeEvent(QCloseEvent *e)
+{
+    if (!m_confirm_on_exit)
+    {
+        e->accept();
+        return;
+    }
+
+    auto msg = QMessageBox::question(this, "Exiting Pomo", "Do you want to exit pomo ?");
+
+    if (msg == QMessageBox::StandardButton::Yes)
+        e->accept();
+    else
+        e->ignore();
+}
 
 Pomo::~Pomo()
 {
