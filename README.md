@@ -2,6 +2,21 @@
 
 A simple and beautiful pomodoro app.
 
+## Installation
+
+Install by compiling from source. You just need the following dependency: ``Qt6``
+
+Compile the source code by running the following commands:
+
+```
+cd pomo &&
+mkdir build &&
+cd build &&
+cmake -DCMAKE_INSTALL_TYPE=Release &&
+make -j$(nproc) &&
+sudo make install
+```
+
 ## Features
 
 - Configurable through TOML
