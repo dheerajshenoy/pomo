@@ -4,8 +4,9 @@ Pomo::Pomo()
 {
     m_timer_font = m_timer_label->font();
     m_state_font = m_state_label->font();
-    initAudioEngine();
     initConfiguration();
+    initAudioEngine();
+    initPomodoro();
     initGui();
     initKeybinds();
 
