@@ -8,7 +8,7 @@ Install by compiling from source. You just need the following dependency: ``Qt6`
 
 Compile the source code by running the following commands:
 
-```
+```bash
 cd pomo &&
 mkdir build &&
 cd build &&
