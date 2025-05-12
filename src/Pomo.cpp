@@ -1,17 +1,25 @@
 #include "Pomo.hpp"
+#include <qkeysequence.h>
 
 Pomo::Pomo()
 {
     m_timer_font = m_timer_label->font();
     m_state_font = m_state_label->font();
+    m_remaining_font = m_remaining_label->font();
+    initActionMap();
     initConfiguration();
     initAudioEngine();
     initPomodoro();
     initGui();
-    initKeybinds();
 
     connect(&m_timer, &QTimer::timeout, this, &Pomo::updateCountdown);
     m_timer.setInterval(1000);
+}
+
+void Pomo::initActionMap() noexcept
+{
+    m_action_map["reset"] = [this]() { resetTimer(); };
+    m_action_map["toggle"] = [this]() { toggleTimer(); };
 }
 
 void Pomo::initConfiguration() noexcept
@@ -44,6 +52,7 @@ void Pomo::initConfiguration() noexcept
         m_timer_label->setPalette(palette);
     }
 
+    m_state_shown = config["state"]["shown"].value_or(true);
     auto state_font_name = config["state"]["font"].value_or("Noto Sans");
     auto state_font_size = config["state"]["font-size"].value_or(80);
     auto state_bold = config["state"]["bold"].value_or(true);
@@ -62,6 +71,26 @@ void Pomo::initConfiguration() noexcept
         m_timer_label->setPalette(state_palette);
     }
 
+    auto remaining_font_name = config["remaining"]["font"].value_or("Noto Sans");
+    auto remaining_font_size = config["remaining"]["font-size"].value_or(80);
+    auto remaining_bold = config["remaining"]["bold"].value_or(true);
+    auto remaining_italic = config["remaining"]["italic"].value_or(false);
+    auto remaining_color = config["remaining"]["color"].value<std::string>();
+    m_remaining_font.setFamily(QString::fromStdString(remaining_font_name));
+    m_remaining_font.setPixelSize(remaining_font_size);
+    m_remaining_font.setBold(remaining_bold);
+    m_remaining_font.setItalic(remaining_italic);
+
+    if (remaining_color.has_value())
+    {
+        auto remaining_palette = m_timer_label->palette();
+        remaining_palette.setColor(QPalette::WindowText,
+                               QString::fromStdString(remaining_color.value()));
+        m_timer_label->setPalette(remaining_palette);
+    }
+
+    m_remaining_shown = config["remaining"]["shown"].value_or(true);
+
     m_hide_hour = config["general"]["hide-hour"].value_or(true);
 
     auto focus_time = config["pomodoro"]["focus"].value_or("25m");
@@ -73,7 +102,7 @@ void Pomo::initConfiguration() noexcept
     m_state_time_map[PomodoroState::LONG_BREAK] = parse_duration(long_break_time);
 
     m_show_notif = config["pomodoro"]["notification"].value_or(true);
-    auto cmd = config["pomodoro"]["notify-cmd"].value<std::string>();
+    auto cmd = config["pomodoro"]["notify-command"].value<std::string>();
 
     if (cmd.has_value())
     {
@@ -89,33 +118,54 @@ void Pomo::initConfiguration() noexcept
 
     m_confirm_on_exit = config["pomodoro"]["confirm-on-exit"].value_or(true);
 
+    if (config["keybindings"].is_table())
+    {
+        auto keybindings = config["keybindings"].as_table();
+
+        for (auto& [k, v] : *keybindings)
+        {
+            auto action = QString::fromStdString(k.str().data());
+            auto key = QString::fromStdString(v.value<std::string>()->data());
+            setupKeybindings(key, action);
+        }
+    } else {
+        // Default keybindings
+    }
 }
 
 void Pomo::initGui() noexcept
 {
     QWidget *widget = new QWidget();
     widget->setLayout(m_layout);
-    m_layout->addWidget(m_timer_label);
-
-    m_state_label->setAlignment(Qt::AlignCenter);
-    m_layout->addWidget(m_state_label);
     this->setCentralWidget(widget);
 
+    m_layout->addStretch(0);
+    m_layout->addWidget(m_timer_label);
+
+    if (m_state_shown)
+    {
+        m_layout->addWidget(m_state_label);
+    }
+
+    m_layout->addStretch(0);
+
+    if (m_remaining_shown)
+    {
+        m_layout->addWidget(m_remaining_label);
+    }
+
+    m_state_label->setAlignment(Qt::AlignCenter);
+    m_remaining_label->setAlignment(Qt::AlignCenter);
     m_timer_label->setFont(m_timer_font);
     m_state_label->setFont(m_state_font);
+    m_remaining_label->setFont(m_remaining_font);
 
     m_layout->setAlignment(Qt::AlignCenter);
 
 }
 
-void Pomo::initKeybinds() noexcept
+void Pomo::resetTimer() noexcept
 {
-    QShortcut *st__toggle_timer = new QShortcut(QKeySequence("space"),
-                                                this);
-
-    connect(st__toggle_timer, &QShortcut::activated,
-            this, &Pomo::toggleTimer);
-
 }
 
 void Pomo::toggleTimer() noexcept
@@ -151,11 +201,28 @@ void Pomo::updateCountdown() noexcept
         }
         m_totalSeconds--;
     } else {
-        m_timer.stop();
         playSound();
-        showNotification();
         m_timer_label->setText("00:00");
+        m_timer.stop();
+        advanceState();
+        showNotification();
+        if (m_timer_is_active)
+            m_timer.start();
     }
+}
+
+void Pomo::setupKeybindings(const QString &key,
+                            const QString &action) noexcept
+{
+
+    QShortcut *shortcut = new QShortcut(QKeySequence(key), this);
+
+    connect(shortcut, &QShortcut::activated, [this, action]() {
+        if (m_action_map.find(action.toStdString()) != m_action_map.end())
+        {
+            m_action_map[action.toStdString()]();
+        }
+    });
 }
 
 // Initialize audio engine
@@ -190,7 +257,25 @@ void Pomo::showNotification() noexcept
     if (!m_show_notif)
         return;
 
-    system(m_notify_cmd.c_str());
+    auto str = replacePlaceholder(m_notify_cmd, "{state}",
+                                  m_state_str_map[m_current_state]);
+
+    qDebug() << str;
+
+    system(str.c_str());
+}
+
+std::string Pomo::replacePlaceholder(std::string input,
+                                     const std::string& key,
+                                     const std::string& value) noexcept
+{
+    size_t pos = input.find(key);
+    while (pos != std::string::npos)
+    {
+        input.replace(pos, key.length(), value);
+        pos = input.find(key, pos + value.length()); // Continue search after replacement
+    }
+    return input;
 }
 
 int Pomo::parse_duration(const std::string& input) noexcept
@@ -221,6 +306,10 @@ void Pomo::initPomodoro() noexcept
     m_totalSeconds = m_state_time_map[m_current_state];
     auto str_secs = secondsToFlexibleString(m_totalSeconds);
     m_timer_label->setText(QString::fromStdString(str_secs));
+
+    m_state_str_map[PomodoroState::FOCUS] = "Focus";
+    m_state_str_map[PomodoroState::SHORT_BREAK] = "Short Break";
+    m_state_str_map[PomodoroState::LONG_BREAK] = "Long Break";
 }
 
 std::string Pomo::secondsToFlexibleString(const int &totalSeconds) noexcept
@@ -255,6 +344,48 @@ void Pomo::closeEvent(QCloseEvent *e)
         e->accept();
     else
         e->ignore();
+}
+
+void Pomo::advanceState() noexcept
+{
+    switch(m_current_state)
+    {
+        case PomodoroState::FOCUS:
+            m_pomodoro_count++;
+            if (m_pomodoro_count % m_pomodoros_before_long_break == 0)
+                m_current_state = PomodoroState::LONG_BREAK;
+            else
+                m_current_state = PomodoroState::SHORT_BREAK;
+            break;
+
+        case PomodoroState::SHORT_BREAK:
+        case PomodoroState::LONG_BREAK:
+            m_current_state = PomodoroState::FOCUS;
+            break;
+    }
+
+    // Reset timer for new state
+    m_totalSeconds = m_state_time_map[m_current_state];
+    m_timer_label->setText(QString::fromStdString(secondsToFlexibleString(m_totalSeconds)));
+
+    updateStateLabel();
+
+}
+
+void Pomo::updateStateLabel() noexcept
+{
+    switch (m_current_state)
+    {
+        case PomodoroState::FOCUS:
+            m_state_label->setText("Focus");
+            break;
+        case PomodoroState::SHORT_BREAK:
+            m_state_label->setText("Short Break");
+            break;
+        case PomodoroState::LONG_BREAK:
+            m_state_label->setText("Long Break");
+            break;
+    }
 }
 
 Pomo::~Pomo()

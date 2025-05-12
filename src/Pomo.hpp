@@ -38,6 +38,8 @@ private:
         LONG_BREAK
     };
 
+    void initActionMap() noexcept;
+    void resetTimer() noexcept;
     void initPomodoro() noexcept;
     void initAudioEngine() noexcept;
     void initConfiguration() noexcept;
@@ -49,17 +51,28 @@ private:
     void showNotification() noexcept;
     int parse_duration(const std::string& input) noexcept;
     std::string secondsToFlexibleString(const int &totalSeconds) noexcept;
+    void setupKeybindings(const QString &key, const QString &action) noexcept;
+    void advanceState() noexcept;
+    void updateStateLabel() noexcept;
+    std::string replacePlaceholder(std::string input, const std::string& key,
+                                   const std::string& value) noexcept;
 
-    QFont m_timer_font, m_state_font;
+    QFont m_timer_font, m_state_font, m_remaining_font;
     bool m_timer_is_active { false },
     m_hide_hour,
     m_show_notif,
     m_has_audio,
-    m_confirm_on_exit;
+    m_confirm_on_exit,
+    m_state_shown,
+    m_remaining_shown;
 
-    int m_totalSeconds;
-    BlinkingLabel *m_timer_label = new BlinkingLabel("00:00");
+    int m_totalSeconds,
+    m_pomodoro_count = 0,
+    m_pomodoros_before_long_break = 4;
+
+    QLabel *m_timer_label = new QLabel("00:00");
     QLabel *m_state_label = new QLabel("Focus");
+    QLabel *m_remaining_label = new QLabel("Remaining");
 
     QVBoxLayout *m_layout = new QVBoxLayout();
     std::string m_audio_file, m_notify_cmd;
@@ -69,9 +82,12 @@ private:
     PomodoroState m_current_state = PomodoroState::FOCUS;
 
     // this holds the time corresponding to each of the state
-    std::unordered_map<PomodoroState,int> m_state_time_map;
+    std::unordered_map<PomodoroState, int> m_state_time_map;
+    std::unordered_map<PomodoroState, std::string> m_state_str_map;
+    std::unordered_map<std::string, std::function<void()>> m_action_map;
 
     ma_result m_audio_result;
     ma_engine m_audio_engine;
+
 
 };
