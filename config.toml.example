@@ -1,40 +1,3 @@
-# pomo
-
-A simple and beautiful pomodoro timer.
-
-![UI Demo](./demo.png)
-
-## Installation
-
-Build from source
-
-```bash
-git clone https://github.com/dheerajshenoy/pomo
-cd pomo
-mkdir build
-cd build
-cmake -DCMAKE_INSTALL_TYPE=Release ..
-make -j$(nproc)
-sudo make install
-```
-
-## Features
-
-- Clean and minimal interface
-- Fully configurable via ``TOML``
-- System notifications on state change
-- Custom audio alerts
-
-## Configuration
-
-A default configuration file is available after install at ``/usr/local/share/pomo/config.toml.example``.
-
-Pomo loads settings from ``~/.config/pomo/config.toml`` if it exists.
-
-Example configuration:
-
-```toml
-
 [pomodoro]
 
 # Duration (format: "25m10s" for 25 minutes and 10 seconds. Works with commas too! (25m, 10s))
@@ -54,7 +17,6 @@ ding-file = "/home/neo/Downloads/ding.mp3"
 notification = true
 
 # Notification command run when state changes (this works only if notification is enabled)
-# {state} in notify-command is replaced with the state name (e.g. "Focus", "Break").
 notify-command = "notify-send 'Pomo' '{state}'"
 
 # Ask for confirmation on exit (prevents accidental closing of window)
@@ -97,4 +59,5 @@ bold = true
 
 toggle = "space"
 reset = "r"
-```
+
+# vim: set filetype=toml :
