@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 
-project(Pomo VERSION 1.0 LANGUAGES CXX)
+project(pomo VERSION 1.0 LANGUAGES CXX)
 
 find_package(Qt6 COMPONENTS Core Widgets REQUIRED)
 
