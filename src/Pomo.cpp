@@ -64,13 +64,13 @@ void Pomo::initConfiguration() noexcept
 
     m_hide_hour = config["general"]["hide-hour"].value_or(true);
 
-    auto focus_time = config["pomodoro"]["focus"].value_or(25 * 60); // 25 min
-    auto short_break_time = config["pomodoro"]["short-break"].value_or(5 * 60); // 5 min
-    auto long_break_time = config["pomodoro"]["long-break"].value_or(15 * 60); // 15 min
+    auto focus_time = config["pomodoro"]["focus"].value_or("25m");
+    auto short_break_time = config["pomodoro"]["short-break"].value_or("5m");
+    auto long_break_time = config["pomodoro"]["long-break"].value_or("15m");
 
-    m_state_time_map[PomodoroState::FOCUS] = focus_time;
-    m_state_time_map[PomodoroState::SHORT_BREAK] = short_break_time;
-    m_state_time_map[PomodoroState::LONG_BREAK] = long_break_time;
+    m_state_time_map[PomodoroState::FOCUS] = parse_duration(focus_time);
+    m_state_time_map[PomodoroState::SHORT_BREAK] = parse_duration(short_break_time);
+    m_state_time_map[PomodoroState::LONG_BREAK] = parse_duration(long_break_time);
 
     m_show_notif = config["pomodoro"]["notification"].value_or(true);
     auto cmd = config["pomodoro"]["notify-cmd"].value<std::string>();
