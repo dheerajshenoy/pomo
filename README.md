@@ -1,33 +1,33 @@
 # pomo
 
-A simple and beautiful pomodoro app.
+A simple and beautiful pomodoro timer.
 
-![This is how the UI looks](./demo.png)
+![UI Demo](./demo.png)
 
 ## Installation
 
-Install by compiling from source. You just need the following dependency: ``Qt6``
-
-Compile the source code by running the following commands:
+Build from source
 
 ```bash
-cd pomo &&
-mkdir build &&
-cd build &&
-cmake -DCMAKE_INSTALL_TYPE=Release &&
-make -j$(nproc) &&
+git clone https://github.com/dheerajshenoy/pomo
+cd pomo
+mkdir build
+cd build
+cmake -DCMAKE_INSTALL_TYPE=Release ..
+make -j$(nproc)
 sudo make install
 ```
 
 ## Features
 
-- Configurable through TOML
-- Notification on task complete
+- Clean and minimal interface
+- Fully configurable via ``TOML``
+- System notifications on state change
+- Custom audio alerts
 
 ## Configuration
 
-Pomo uses TOML for configuration. Pomo tries to read the file ``~/.config/pomo/config.toml`` and loads
-it if it exists.
+Pomo loads settings from ``~/.config/pomo/config.toml`` if it exists.
 
 Example configuration:
 
@@ -52,6 +52,7 @@ ding-file = "/home/neo/Downloads/ding.mp3"
 notification = true
 
 # Notification command run when state changes (this works only if notification is enabled)
+# {state} in notify-command is replaced with the state name (e.g. "Focus", "Break").
 notify-command = "notify-send 'Pomo' '{state}'"
 
 # Ask for confirmation on exit (prevents accidental closing of window)
