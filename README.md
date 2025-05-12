@@ -1,2 +1,7 @@
 # pomo
-Pomodoro GUI App
+
+A simple and beautiful pomodoro app.
+
+## Features
+
+- Configurable through TOML
