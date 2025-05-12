@@ -31,33 +31,47 @@ void Pomo::initConfiguration() noexcept
     auto font_size = config["time"]["font-size"].value_or(80);
     auto bold = config["time"]["bold"].value_or(true);
     auto italic = config["time"]["italic"].value_or(false);
-    auto color = config["time"]["color"].value_or("#000000");
+    auto color = config["time"]["color"].value<std::string>();
     m_timer_font.setFamily(QString::fromStdString(font_name));
     m_timer_font.setPixelSize(font_size);
     m_timer_font.setBold(bold);
     m_timer_font.setItalic(italic);
-    auto palette = m_timer_label->palette();
-    palette.setColor(QPalette::WindowText, color);
-    m_timer_label->setPalette(palette);
+    if (color.has_value())
+    {
+        auto palette = m_timer_label->palette();
+        palette.setColor(QPalette::WindowText,
+                         QString::fromStdString(color.value()));
+        m_timer_label->setPalette(palette);
+    }
 
     auto state_font_name = config["state"]["font"].value_or("Noto Sans");
     auto state_font_size = config["state"]["font-size"].value_or(80);
     auto state_bold = config["state"]["bold"].value_or(true);
     auto state_italic = config["state"]["italic"].value_or(false);
-    auto state_color = config["state"]["color"].value_or("#000000");
+    auto state_color = config["state"]["color"].value<std::string>();
     m_state_font.setFamily(QString::fromStdString(state_font_name));
     m_state_font.setPixelSize(state_font_size);
     m_state_font.setBold(state_bold);
     m_state_font.setItalic(state_italic);
-    auto state_palette = m_timer_label->palette();
-    state_palette.setColor(QPalette::WindowText, color);
-    m_timer_label->setPalette(state_palette);
+
+    if (state_color.has_value())
+    {
+        auto state_palette = m_timer_label->palette();
+        state_palette.setColor(QPalette::WindowText,
+                               QString::fromStdString(state_color.value()));
+        m_timer_label->setPalette(state_palette);
+    }
 
     m_hide_hour = config["general"]["hide-hour"].value_or(true);
 
-    m_focus_time = config["pomodoro"]["focus"].value_or(25 * 60); // 25 min
-    m_short_break_time = config["pomodoro"]["short-break"].value_or(5 * 60); // 5 min
-    m_long_break_time = config["pomodoro"]["long-break"].value_or(15 * 60); // 15 min
+    auto focus_time = config["pomodoro"]["focus"].value_or(25 * 60); // 25 min
+    auto short_break_time = config["pomodoro"]["short-break"].value_or(5 * 60); // 5 min
+    auto long_break_time = config["pomodoro"]["long-break"].value_or(15 * 60); // 15 min
+
+    m_state_time_map[PomodoroState::FOCUS] = focus_time;
+    m_state_time_map[PomodoroState::SHORT_BREAK] = short_break_time;
+    m_state_time_map[PomodoroState::LONG_BREAK] = long_break_time;
+
     m_show_notif = config["pomodoro"]["notification"].value_or(true);
     auto cmd = config["pomodoro"]["notify-cmd"].value<std::string>();
 
