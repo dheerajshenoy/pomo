@@ -54,6 +54,7 @@ private:
     void setupKeybindings(const QString &key, const QString &action) noexcept;
     void advanceState() noexcept;
     void updateStateLabel() noexcept;
+    void updateRemainingLabel() noexcept;
     std::string replacePlaceholder(std::string input, const std::string& key,
                                    const std::string& value) noexcept;
 
@@ -64,15 +65,16 @@ private:
     m_has_audio,
     m_confirm_on_exit,
     m_state_shown,
-    m_remaining_shown;
+    m_remaining_shown,
+    m_timer_paused;
 
     int m_totalSeconds,
     m_pomodoro_count = 0,
     m_pomodoros_before_long_break = 4;
 
-    QLabel *m_timer_label = new QLabel("00:00");
-    QLabel *m_state_label = new QLabel("Focus");
-    QLabel *m_remaining_label = new QLabel("Remaining");
+    BlinkingLabel *m_timer_label = new BlinkingLabel("00:00");
+    BlinkingLabel *m_state_label = new BlinkingLabel("Start");
+    BlinkingLabel *m_remaining_label = new BlinkingLabel("Remaining");
 
     QVBoxLayout *m_layout = new QVBoxLayout();
     std::string m_audio_file, m_notify_cmd;
