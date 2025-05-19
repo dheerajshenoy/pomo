@@ -136,7 +136,10 @@ void Pomo::initConfiguration() noexcept
     if (ding_file.has_value())
     {
         m_audio_file = ding_file.value();
-        m_has_audio = true;
+        if (QFile::exists(QString::fromStdString(m_audio_file)))
+        {
+            m_has_audio = true;
+        }
     }
 
     m_confirm_on_exit = config["pomodoro"]["confirm-on-exit"].value_or(true);
