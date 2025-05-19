@@ -13,6 +13,7 @@
 #include <QStandardPaths>
 #include <QCloseEvent>
 #include <QMessageBox>
+#include <QFile>
 #include <map>
 #include <regex>
 #include <unordered_map>
@@ -20,6 +21,7 @@
 #include "BlinkingLabel.hpp"
 #include "toml.hpp"
 #include "miniaudio.h"
+#include "Notification.hpp"
 
 class Pomo : public QMainWindow
 {
@@ -58,15 +60,15 @@ private:
     std::string replacePlaceholder(std::string input, const std::string& key,
                                    const std::string& value) noexcept;
 
-    QFont m_timer_font, m_state_font, m_remaining_font;
+    QFont m_timer_font, m_state_font, m_remaining_font, m_paused_font;
     bool m_timer_is_active { false },
     m_hide_hour,
     m_show_notif,
-    m_has_audio,
+    m_has_audio { false },
     m_confirm_on_exit,
     m_state_shown,
     m_remaining_shown,
-    m_timer_paused;
+    m_paused_shown;
 
     int m_totalSeconds,
     m_pomodoro_count = 0,
@@ -75,6 +77,7 @@ private:
     BlinkingLabel *m_timer_label = new BlinkingLabel("00:00");
     BlinkingLabel *m_state_label = new BlinkingLabel("Start");
     BlinkingLabel *m_remaining_label = new BlinkingLabel("Remaining");
+    BlinkingLabel *m_paused_label = new BlinkingLabel("PAUSED");
 
     QVBoxLayout *m_layout = new QVBoxLayout();
     std::string m_audio_file, m_notify_cmd;
