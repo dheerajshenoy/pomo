@@ -21,12 +21,12 @@ class BlinkingLabel : public QLabel
 
     void toggleVisibility() noexcept
     {
+        m_isBlinkShown = !m_isBlinkShown;
         QPalette palette = this->palette();
         QColor color = palette.color(QPalette::WindowText);
-        color.setAlpha(m_isBlinkShown ? 0 : 255);
+        color.setAlpha(m_isBlinkShown ? 255 : 0);
         palette.setColor(QPalette::WindowText, color);
         this->setPalette(palette);
-        m_isBlinkShown = !m_isBlinkShown;
     }
 
     void setBlinkInterval(int msec) noexcept
@@ -38,6 +38,11 @@ class BlinkingLabel : public QLabel
     {
         if (m_blink_timer.isActive())
             m_blink_timer.stop();
+        QPalette palette = this->palette();
+        QColor color = palette.color(QPalette::WindowText);
+        color.setAlpha(255);
+        palette.setColor(QPalette::WindowText, color);
+        this->setPalette(palette);
     }
 
 private:
