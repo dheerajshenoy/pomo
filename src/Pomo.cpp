@@ -1,11 +1,14 @@
 #include "Pomo.hpp"
-#include <qkeysequence.h>
+#include <qnamespace.h>
+#include <qt6/QtWidgets/qsystemtrayicon.h>
 
 Pomo::Pomo()
 {
     m_timer_font = m_timer_label->font();
     m_state_font = m_state_label->font();
     m_remaining_font = m_remaining_label->font();
+    m_paused_font = m_paused_label->font();
+
     initActionMap();
     initConfiguration();
     initAudioEngine();
@@ -90,6 +93,25 @@ void Pomo::initConfiguration() noexcept
         m_timer_label->setPalette(remaining_palette);
     }
 
+    auto paused_font_name = config["paused"]["font"].value_or("Noto Sans");
+    auto paused_font_size = config["paused"]["font-size"].value_or(80);
+    auto paused_bold = config["paused"]["bold"].value_or(true);
+    auto paused_italic = config["paused"]["italic"].value_or(false);
+    auto paused_color = config["paused"]["color"].value<std::string>();
+    m_paused_font.setFamily(QString::fromStdString(paused_font_name));
+    m_paused_font.setPixelSize(paused_font_size);
+    m_paused_font.setBold(paused_bold);
+    m_paused_font.setItalic(paused_italic);
+
+    if (paused_color.has_value())
+    {
+        auto paused_palette = m_paused_label->palette();
+        paused_palette.setColor(QPalette::WindowText,
+                               QString::fromStdString(paused_color.value()));
+        m_paused_label->setPalette(paused_palette);
+    }
+    m_paused_shown = config["paused"]["shown"].value_or(true);
+
     m_remaining_shown = config["remaining"]["shown"].value_or(true);
 
     m_hide_hour = config["general"]["hide-hour"].value_or(true);
@@ -143,8 +165,16 @@ void Pomo::initGui() noexcept
     widget->setLayout(m_layout);
     this->setCentralWidget(widget);
 
+
+    if (m_paused_shown)
+    {
+        m_layout->addWidget(m_paused_label);
+    }
     m_layout->addStretch(0);
+
     m_layout->addWidget(m_timer_label);
+
+    m_paused_label->setVisible(false);
 
     if (m_state_shown)
     {
@@ -158,14 +188,23 @@ void Pomo::initGui() noexcept
         m_layout->addWidget(m_remaining_label);
     }
 
+    m_paused_label->setAlignment(Qt::AlignCenter);
     m_timer_label->setAlignment(Qt::AlignCenter);
     m_state_label->setAlignment(Qt::AlignCenter);
     m_remaining_label->setAlignment(Qt::AlignCenter);
     m_layout->setAlignment(Qt::AlignCenter);
 
+    m_paused_label->setFont(m_paused_font);
     m_timer_label->setFont(m_timer_font);
     m_state_label->setFont(m_state_font);
     m_remaining_label->setFont(m_remaining_font);
+
+    if (!m_has_audio)
+    {
+        auto *notif = new NotificationWidget("Could not find audio file for bell", this);
+        notif->show();
+        m_layout->addWidget(notif);
+    }
 
 }
 
@@ -181,13 +220,15 @@ void Pomo::toggleTimer() noexcept
 
     if (m_timer_is_active)
     {
+        playSound();
         m_timer.start();
         updateStateLabel();
-        m_timer_paused = false;
+        m_paused_label->stopBlinking();
     } else {
         m_timer.stop();
-        m_timer_paused = true;
+        m_paused_label->startBlinking();
     }
+    m_paused_label->setVisible(!m_timer_is_active);
 }
 
 void Pomo::updateCountdown() noexcept
@@ -263,8 +304,6 @@ void Pomo::showNotification() noexcept
 
     auto str = replacePlaceholder(m_notify_cmd, "{state}",
                                   m_state_str_map[m_current_state]);
-
-    qDebug() << str;
 
     system(str.c_str());
 }
