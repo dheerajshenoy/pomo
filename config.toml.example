@@ -55,6 +55,14 @@ font-size = 15
 bold = true
 # color = "#888888"
 
+[paused]
+
+shown = true
+font = "JetBrainsMono Nerd Font Mono"
+font-size = 30
+bold = true
+
+
 [keybindings]
 
 toggle = "space"
