@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+# Icon=system-file-manager
+Name=Pomo
+GenericName=Pomodoro Timer
+Comment=Pomodoro timer application
+Categories=Pomodoro;Timer;QT;
+Exec=pomo
+Terminal=false
