@@ -67,5 +67,7 @@ bold = true
 
 toggle = "space"
 reset = "r"
+next-task = "Shift+N"
+next-session = "Shift+M"
 
 # vim: set filetype=toml :
