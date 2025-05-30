@@ -493,6 +493,6 @@ Pomo::nextSession() noexcept
 {
     m_current_state               = PomodoroState::LONG_BREAK;
     m_pomodoros_before_long_break = 4;
-    m_pomodoro_count = 0;
+    m_pomodoro_count              = 0;
     advanceState();
 }

@@ -3,12 +3,10 @@
 #include <QLabel>
 #include <QTimer>
 
-
 class BlinkingLabel : public QLabel
 {
-    public:
-    BlinkingLabel(const QString &text, QWidget *parent = nullptr)
-    : QLabel(text, parent)
+public:
+    BlinkingLabel(const QString &text, QWidget *parent = nullptr) : QLabel(text, parent)
     {
         connect(&m_blink_timer, &QTimer::timeout, this, &BlinkingLabel::toggleVisibility);
         m_blink_timer.setInterval(500);
@@ -21,9 +19,9 @@ class BlinkingLabel : public QLabel
 
     void toggleVisibility() noexcept
     {
-        m_isBlinkShown = !m_isBlinkShown;
+        m_isBlinkShown   = !m_isBlinkShown;
         QPalette palette = this->palette();
-        QColor color = palette.color(QPalette::WindowText);
+        QColor color     = palette.color(QPalette::WindowText);
         color.setAlpha(m_isBlinkShown ? 255 : 0);
         palette.setColor(QPalette::WindowText, color);
         this->setPalette(palette);
@@ -39,7 +37,7 @@ class BlinkingLabel : public QLabel
         if (m_blink_timer.isActive())
             m_blink_timer.stop();
         QPalette palette = this->palette();
-        QColor color = palette.color(QPalette::WindowText);
+        QColor color     = palette.color(QPalette::WindowText);
         color.setAlpha(255);
         palette.setColor(QPalette::WindowText, color);
         this->setPalette(palette);
@@ -47,5 +45,5 @@ class BlinkingLabel : public QLabel
 
 private:
     QTimer m_blink_timer;
-    bool m_isBlinkShown { true };
+    bool m_isBlinkShown{true};
 };
